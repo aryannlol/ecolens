@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EcoLens</title>
+  <link rel="stylesheet" href="/src/ui/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div id="stage">
+    <canvas id="gl"></canvas>
+
+    <canvas id="hand-overlay"></canvas>
+    <div id="cursor"></div>
+
+
+
+
+  </div>
+
+  <div id="hud">
+    <header id="top-bar">
+      <!-- Round leaf-logo button -->
+      <button id="btn-logo" class="top-circle-btn" type="button" title="EcoLens">
+        <svg viewBox="0 0 24 24" class="top-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 21v-8M12 13c-5 0-8-3-8-8 5 0 8 3 8 8zM12 15c0-4 3-7 8-7 0 4-3 7-8 7z"/>
+        </svg>
+      </button>
+
+      <!-- Status pill: "Polluted World (Locked)" with lock icon -->
+      <div id="st-track-pill" class="top-pill top-dimmed">
+        <svg viewBox="0 0 24 24" class="top-icon-sm" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <span id="st-track" class="pill-label">Waiting</span>
+      </div>
+
+      <!-- Active world pill with count: bright green outline + soft green outer glow -->
+      <div id="top-world-pill" class="top-pill top-active">
+        <span id="meter-world">Polluted World</span>
+        <span id="meter-count" class="pill-count">12/12</span>
+      </div>
+
+      <!-- "Locked" pill with lock icon (toggles lock) -->
+      <button id="btn-lock" class="top-pill top-btn top-dimmed" type="button" title="Lock Marker (L)">
+        <svg viewBox="0 0 24 24" class="top-icon-sm" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <span class="pill-label" id="lock-label">Locked</span>
+      </button>
+
+      <!-- Segmented toggle: [ Phone | Hand ] -->
+      <div class="top-segmented" role="group">
+        <button id="btn-qr" class="seg-btn" type="button" title="Phone Markers (M)">
+          <svg viewBox="0 0 24 24" class="top-icon-sm" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+            <line x1="12" y1="18" x2="12.01" y2="18"/>
+          </svg>
+          <span class="pill-label">Phone</span>
+        </button>
+        <button id="st-hand" class="seg-btn" type="button" title="Hand tracking status (H)">
+          <svg viewBox="0 0 24 24" class="top-icon-sm" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 11V6a2 2 0 0 0-4 0v4M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8M6 14a6 6 0 0 0 12 0v-3"/>
+          </svg>
+          <span class="pill-label">Hand</span>
+        </button>
+      </div>
+
+      <!-- Round settings gear button -->
+      <button id="btn-settings" class="top-circle-btn" type="button" title="Settings">
+        <svg viewBox="0 0 24 24" class="top-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+
+      <!-- Settings popover -->
+      <div id="settings-popover" class="settings-menu" hidden>
+        <div class="settings-row">
+          <span>Sound</span>
+          <button id="set-sound" class="set-toggle-btn active" type="button">On</button>
+        </div>
+        <div class="settings-row">
+          <span>Quality</span>
+          <div class="quality-seg">
+            <button class="q-btn" data-q="low" type="button">Low</button>
+            <button class="q-btn" data-q="med" type="button">Med</button>
+            <button class="q-btn active" data-q="high" type="button">High</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <button id="set-reset" class="set-action-btn" type="button">Reset Game</button>
+        </div>
+      </div>
+    </header>
+
+    <div id="toast"></div>
+
+    <!-- Bottom bar (TASK D) -->
+    <footer id="bottom-bar">
+      <!-- Hint pill, bottom center -->
+      <div id="hint-pill">
+        <svg viewBox="0 0 24 24" class="hint-leaf-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 21v-8M12 13c-5 0-8-3-8-8 5 0 8 3 8 8zM12 15c0-4 3-7 8-7 0 4-3 7-8 7z"/>
+        </svg>
+        <span id="hint">Sort waste into the right bins to restore the world.</span>
+      </div>
+
+      <!-- "Show Results" button, bottom right -->
+      <button id="btn-show-results" class="results-btn" type="button">
+        <svg viewBox="0 0 24 24" class="chart-icon" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        <span>Show Results</span>
+        <svg viewBox="0 0 24 24" class="chevron-icon" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+    </footer>
+  </div>
+
+  <div id="start">
+    <div class="card">
+      <div class="brand-row">
+        <span class="brand-badge">AR Experience</span>
+        <h1>EcoLens</h1>
+      </div>
+      <p>Restore polluted diorama ecosystems in physical space using hand gestures and AR markers.</p>
+      <ul class="start-features">
+        <li><b>Pinch</b> to pick & recycle waste into matching bins</li>
+        <li><b>Wave</b> hand to blow away atmospheric smog</li>
+        <li><b>Markers</b> can be printed or displayed on phone screen</li>
+      </ul>
+      <div class="row">
+        <button id="btn-cam" class="btn-primary">Start camera</button>
+        <button id="btn-demo" class="ghost">Interactive demo</button>
+        <button id="btn-start-qr" class="ghost" type="button">Phone markers</button>
+      </div>
+      <small id="start-note"></small>
+    </div>
+  </div>
+
+  <div id="qr-modal" class="modal-backdrop" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Markers on Phone</h3>
+        <button id="qr-close" class="modal-close" aria-label="Close" type="button">Close</button>
+      </div>
+      <p class="modal-sub">Scan to display tracking markers directly on your phone screen—no printer needed.</p>
+      <div class="qr-box">
+        <img id="qr-img" width="200" height="200" alt="Marker QR code" />
+      </div>
+      <div class="qr-host-row">
+        <span>Wi-Fi IP:</span>
+        <input id="qr-ip-input" type="text" spellcheck="false" placeholder="192.168.x.x" />
+      </div>
+      <div class="qr-link-box">
+        <a id="qr-link" target="_blank" rel="noopener"></a>
+        <button id="btn-copy-link" type="button" class="ghost">Copy</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
