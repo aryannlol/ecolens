@@ -12,33 +12,5 @@
     "license": "CC0-1.0",
     "file": "assets/ground_dead.jpg",
     "downloaded": true
-  },
-  {
-    "id": "aerial_grass_rock",
-    "source": "polyhaven.com",
-    "license": "CC0-1.0",
-    "file": "assets/ground_live.jpg",
-    "downloaded": true
-  },
-  {
-    "id": "aerial_asphalt_01",
-    "source": "polyhaven.com",
-    "license": "CC0-1.0",
-    "file": "assets/road.jpg",
-    "downloaded": true
-  },
-  {
-    "id": "rough_plasterbrick_05",
-    "source": "polyhaven.com",
-    "license": "CC0-1.0",
-    "file": "assets/wall.jpg",
-    "downloaded": true
-  },
-  {
-    "id": "rocks_ground_02",
-    "source": "polyhaven.com",
-    "license": "CC0-1.0",
-    "file": "assets/rock.jpg",
-    "downloaded": true
   }
 ]

@@ -20,7 +20,6 @@ export class HUD {
   setProgress(sorted, total) { $('meter-count').textContent = `${sorted}/${total}`; }
   setAir(air) { ecoMeters.setAir(air); }
   setMeter(rd) { ecoMeters.setEco(rd); }
-  setSmogVisual() {}
   hint(text) { $('hint').textContent = text; }
   toast(text, tone = 'good') {
     const t = $('toast'); t.textContent = text; t.dataset.tone = tone;
@@ -148,4 +147,3 @@ Corner (1, 1): (${c11.x.toFixed(3)}, ${c11.y.toFixed(3)}) exp (${expX10.toFixed(
   hideStart() { gsap.to($('start'), { autoAlpha: 0, duration: 0.4 }); }
   startNote(t) { $('start-note').textContent = t; }
 }
-export { CONFIG };

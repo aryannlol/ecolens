@@ -1,0 +1,275 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eco Meters</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+<style>
+  :root { --font: 'Bricolage Grotesque', system-ui, sans-serif; }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+    font-family: var(--font); color: #eef7ea; overflow: hidden;
+    background: radial-gradient(90% 70% at 50% 40%, #12361f 0%, #0a2316 55%, #06150d 100%);
+  }
+  .blob { position: fixed; border-radius: 50%; filter: blur(2px); z-index: -1; }
+  .b1 { width: 38vw; height: 38vw; left: -14vw; top: -18vw; background: #3e8b45; opacity: .55; }
+  .b2 { width: 34vw; height: 34vw; right: -12vw; bottom: -16vw; background: #4d9f4a; opacity: .5; }
+  .b3 { width: 26vw; height: 40vw; right: -10vw; top: 10vh; background: #17432a; opacity: .7; }
+
+  .stage { display: flex; align-items: center; gap: clamp(8px, 3vw, 40px); }
+
+  .gauge { position: relative; width: clamp(150px, 26vw, 290px); height: min(66vh, 540px); border-radius: 999px / 22%;
+    padding: 18% 7% 6%; display: flex; flex-direction: column; align-items: center;
+    background: linear-gradient(160deg, #1d5a31, #0f3a20 60%, #0c2e19);
+    border: 3px solid #2f8a45;
+    box-shadow: 0 0 calc(18px + var(--glow, 0) * 50px) rgba(90, 255, 130, calc(.12 + var(--glow, 0) * .5)), inset 0 2px 0 rgba(255,255,255,.18), inset 0 -10px 30px rgba(0,0,0,.35);
+  }
+  .gauge.pulse { animation: pulse .9s ease-out; }
+  @keyframes pulse { 0% { transform: scale(1); } 25% { transform: scale(1.025); } 100% { transform: scale(1); } }
+
+  .head { position: absolute; top: 4.5%; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 12px;
+    font-weight: 800; font-size: clamp(1.3rem, 3.2vw, 2.1rem); letter-spacing: .04em; }
+  .head svg { width: clamp(26px, 3.4vw, 40px); height: auto; color: #e9ffe2; }
+
+  .well { position: relative; flex: 1; width: 100%; border-radius: 999px / 12%; overflow: hidden;
+    background: #031109; box-shadow: inset 0 0 0 3px #0d3a1e, inset 0 10px 40px rgba(0,0,0,.8); }
+  .well canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .well::after { content: ''; position: absolute; left: 8%; top: 6%; width: 9%; height: 60%; border-radius: 99px;
+    background: linear-gradient(rgba(255,255,255,.14), transparent); pointer-events: none; }
+  .pct { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); padding: .05em .55em; border-radius: 999px; white-space: nowrap;
+    font-weight: 800; font-size: clamp(1.2rem, 3.3vw, 2.1rem); color: #fff; background: rgba(3,17,9,.55); border: 1px solid rgba(255,255,255,.18);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 2; pointer-events: none; }
+  .cap { position: absolute; top: calc(10px + clamp(2rem, 4.6vw, 3rem)); left: 0; right: 0; text-align: center; z-index: 2; pointer-events: none;
+    font-size: clamp(.6rem, 1.2vw, .78rem); font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,.8); }
+  .tick { position: absolute; right: 0; width: 14px; height: 2px; background: rgba(255,255,255,.35); }
+  .tick::before { content: attr(data-l); position: absolute; right: 18px; top: -7px; font-size: .62rem; color: rgba(255,255,255,.45); }
+
+  .link { position: relative; width: clamp(64px, 9vw, 110px); aspect-ratio: 1; display: grid; place-content: center; text-align: center; }
+  .link::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 3px dashed #8fe08a; animation: spin 18s linear infinite; }
+  .link b { font-size: clamp(1rem, 2.4vw, 1.6rem); font-weight: 800; }
+  .link small { font-size: .62rem; color: #a7c8a3; letter-spacing: .12em; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  button { font: 700 .95rem var(--font); color: #eef7ea; cursor: pointer; padding: .7rem 1.4rem; border-radius: 999px;
+    border: 1.5px solid rgba(160,255,150,.4); background: rgba(10,40,24,.7); }
+  button:hover, button:focus-visible { background: rgba(110,255,110,.2); outline: none; }
+  button.main { color: #08230f; border: 0; background: linear-gradient(#b6ff7a, #3fdc3a); box-shadow: 0 6px 24px rgba(70,255,70,.35); }
+  .hint { font-size: .8rem; color: #8fb08c; }
+  @media (prefers-reduced-motion: reduce) { .gauge.pulse, .link::before { animation: none; } }
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+
+<div class="stage">
+  <section class="gauge" id="air" aria-label="Air quality">
+    <div class="head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8a2.5 2.5 0 1 1-2.5 2.5"/></svg>AIR
+    </div>
+    <div class="well"><canvas></canvas><div class="pct">0%</div><i class="tick" style="bottom:30%" data-l="30"></i><i class="tick" style="bottom:70%" data-l="70"></i></div>
+  </section>
+
+  <div class="link"><div><b id="avg">0%</b><br><small>BALANCE</small></div></div>
+
+  <section class="gauge" id="eco" aria-label="Ecosystem health">
+    <div class="head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-8M12 13c-5 0-8-3-8-8 5 0 8 3 8 8zM12 15c0-4 3-7 8-7 0 4-3 7-8 7z"/></svg>ECO
+    </div>
+    <div class="well"><canvas></canvas><div class="pct">0%</div><i class="tick" style="bottom:30%" data-l="30"></i><i class="tick" style="bottom:70%" data-l="70"></i></div>
+  </section>
+</div>
+
+<div class="controls">
+  <button class="main" id="sort">Sort an item (+10)</button>
+  <button id="big">Big cleanup (+25)</button>
+  <button id="reset">Reset</button>
+</div>
+<p class="hint">Space = sort an item &nbsp;·&nbsp; In your game call <code>EcoMeters.set(airPercent, ecoPercent)</code></p>
+
+<script>
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function rgb(h) { h = h.replace('#', ''); return [0, 2, 4].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }
+  function mix(a, b, t) { var x = rgb(a), y = rgb(b); return 'rgb(' + x.map(function (v, i) { return Math.round(v + (y[i] - v) * t); }).join(',') + ')'; }
+
+  function rng(n) { return function () { return (n = n * 16807 % 2147483647) / 2147483647; }; }
+
+  // ---------- shared: spring-smoothed level, glow, caption ----------
+  function Base(id, caps) {
+    this.root = document.getElementById(id); this.caps = caps;
+    var well = this.root.querySelector('.well');
+    this.well = well; this.cv = well.querySelector('canvas'); this.cx = this.cv.getContext('2d'); this.pct = well.querySelector('.pct');
+    this.cap = document.createElement('div'); this.cap.className = 'cap'; well.appendChild(this.cap);
+    this.v = 0; this.vel = 0; this.target = 0; this.glow = 0; this.fx = [];
+    var self = this; new ResizeObserver(function () { self.resize(); }).observe(well); this.resize(); this.init();
+  }
+  Base.prototype.resize = function () {
+    var r = this.well.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
+    this.w = r.width; this.h = r.height; this.cv.width = r.width * d; this.cv.height = r.height * d; this.cx.setTransform(d, 0, 0, d, 0, 0);
+  };
+  Base.prototype.set = function (p) {
+    p = Math.max(0, Math.min(100, p)) / 100;
+    if (p > this.target + 0.001) {
+      this.burst(); this.vel += 0.015; this.glow = 1;
+      this.root.classList.remove('pulse'); void this.root.offsetWidth; this.root.classList.add('pulse');
+    }
+    this.target = p;
+  };
+  Base.prototype.frame = function (t) {
+    this.vel += (this.target - this.v) * 0.012; this.vel *= 0.9; this.v += this.vel; this.v = Math.max(0, this.v);
+    this.glow *= 0.96; this.root.style.setProperty('--glow', this.glow.toFixed(3));
+    var lvl = Math.min(1, this.v); this.cx.clearRect(0, 0, this.w, this.h);
+    this.draw(this.cx, t, lvl, this.w, this.h);
+    var p = Math.round(lvl * 100); this.pct.textContent = p + '%';
+    var cap = this.caps[0][1]; this.caps.forEach(function (c) { if (p >= c[0]) cap = c[1]; }); this.cap.textContent = cap;
+  };
+  function inherit(C, proto) { C.prototype = Object.create(Base.prototype); for (var k in proto) C.prototype[k] = proto[k]; }
+
+  // ---------- AIR: clean sky rises and pushes the smog out ----------
+  function AirG(id) { Base.call(this, id, [[0, 'Toxic smog'], [20, 'Heavy haze'], [45, 'Thinning'], [70, 'Clear'], [95, 'Fresh air']]); }
+  inherit(AirG, {
+    init: function () {
+      var r = rng(7); this.puffs = []; this.streaks = []; this.ash = [];
+      for (var i = 0; i < 20; i++) this.puffs.push({ x: r(), y: r(), s: 0.25 + r() * 0.4, v: 0.01 + r() * 0.025 });
+      for (i = 0; i < 12; i++) this.streaks.push({ x: r(), y: r(), l: 0.18 + r() * 0.3, v: 0.4 + r() });
+      for (i = 0; i < 26; i++) this.ash.push({ x: r(), y: r(), v: 0.01 + r() * 0.03, r: 0.8 + r() * 1.8 });
+    },
+    burst: function () { for (var i = 0; i < 9; i++) this.fx.push({ x: -60, y: Math.random() * this.h, l: this.w * (0.4 + Math.random() * 0.5), v: 9 + Math.random() * 9, life: 1 }); },
+    draw: function (c, t, lvl, w, h) {
+      var by = h * (1 - lvl), amp = reduce ? 1 : 4 + Math.min(10, Math.abs(this.vel) * 700), self = this;
+      var bg = c.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, mix('#2a2018', '#1c6b8c', lvl)); bg.addColorStop(1, '#7a5a35');
+      c.fillStyle = bg; c.fillRect(0, 0, w, h);
+      // drifting smog puffs
+      this.puffs.forEach(function (p) {
+        var x = ((p.x * w * 1.4 + t * p.v) % (w * 1.4)) - w * 0.2, y = p.y * h, r = p.s * w;
+        var g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, 'rgba(92,66,44,' + (0.5 * (0.4 + 0.6 * (1 - lvl))) + ')'); g.addColorStop(1, 'rgba(92,66,44,0)');
+        c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2);
+      });
+      c.fillStyle = 'rgba(30,22,16,.7)';
+      this.ash.forEach(function (a) { var y = (a.y * h + t * a.v) % h; if (y < by) { c.beginPath(); c.arc(a.x * w + Math.sin(t * 0.001 + a.y * 9) * 6, y, a.r, 0, 6.28); c.fill(); } });
+      // clean sky below the cloud edge
+      function edge(x) { return by + Math.sin(x * 0.025 + t * 0.0012) * amp + Math.sin(x * 0.06 - t * 0.0009) * amp * 0.5; }
+      if (lvl > 0.004) {
+        c.save(); c.beginPath(); c.moveTo(0, h);
+        for (var x = 0; x <= w; x += 4) c.lineTo(x, edge(x));
+        c.lineTo(w, h); c.closePath(); c.clip();
+        var sky = c.createLinearGradient(0, by, 0, h); sky.addColorStop(0, '#d2f5ff'); sky.addColorStop(0.35, '#6fd4f7'); sky.addColorStop(1, '#2aa6e6');
+        c.fillStyle = sky; c.fillRect(0, 0, w, h);
+        c.lineCap = 'round'; c.lineWidth = 2;
+        this.streaks.forEach(function (s) {
+          var len = s.l * w, x0 = ((s.x * w + t * s.v * 0.12) % (w + len + 40)) - len, y = by + 18 + s.y * Math.max(0, h - by - 30);
+          var g = c.createLinearGradient(x0, 0, x0 + len, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.7, 'rgba(255,255,255,.7)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+          c.strokeStyle = g; c.beginPath(); c.moveTo(x0, y); c.quadraticCurveTo(x0 + len * 0.5, y - 7, x0 + len, y); c.stroke();
+        });
+        c.restore();
+        // white cloud bank riding the edge
+        var fade = Math.min(1, (1 - lvl) * 8);
+        for (x = -10; x <= w + 10; x += 24) {
+          var cy = edge(x) - 4 + Math.sin(x * 0.2 + t * 0.002) * 3, r = 22 + (Math.sin(x * 0.13) + 1) * 12;
+          var g2 = c.createRadialGradient(x, cy, 0, x, cy, r); g2.addColorStop(0, 'rgba(255,255,255,' + 0.6 * fade + ')'); g2.addColorStop(1, 'rgba(255,255,255,0)');
+          c.fillStyle = g2; c.fillRect(x - r, cy - r, r * 2, r * 2);
+        }
+      }
+      // sun breaks through once the air is mostly clean
+      if (lvl > 0.6) {
+        var k = (lvl - 0.6) / 0.4, sg = c.createRadialGradient(w * 0.78, h * 0.12, 0, w * 0.78, h * 0.12, w * 0.8);
+        sg.addColorStop(0, 'rgba(255,248,200,' + 0.75 * k + ')'); sg.addColorStop(1, 'rgba(255,248,200,0)');
+        c.fillStyle = sg; c.fillRect(0, 0, w, h);
+      }
+      // gust when you gain points
+      this.fx = this.fx.filter(function (f) {
+        f.x += f.v; f.life -= 0.012; if (f.x > w + 40 || f.life <= 0) return false;
+        var g = c.createLinearGradient(f.x - f.l, 0, f.x, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(255,255,255,' + 0.8 * f.life + ')');
+        c.strokeStyle = g; c.lineWidth = 2.5; c.beginPath(); c.moveTo(f.x - f.l, f.y); c.lineTo(f.x, f.y); c.stroke(); return true;
+      });
+    }
+  });
+
+  // ---------- ECO: an ecosystem grows from bare soil to a living forest ----------
+  function EcoG(id) { Base.call(this, id, [[0, 'Barren'], [10, 'Sprouting'], [35, 'Growing'], [60, 'Flourishing'], [85, 'Thriving']]); }
+  inherit(EcoG, {
+    init: function () {
+      var r = rng(3), P = this.plants = [], cols = ['#ff6fa5', '#ffd23f', '#b78cff', '#ff8a5c', '#ffffff'], i;
+      function add(k, n, a, b) { for (var j = 0; j < n; j++) P.push({ k: k, x: 0.05 + r() * 0.9, thr: a + r() * (b - a), g: 0, ph: r() * 6, s: r(), col: cols[Math.floor(r() * cols.length)] }); }
+      add('tree', 3, 0.5, 0.85); add('bush', 3, 0.38, 0.65); add('flower', 7, 0.28, 0.7); add('sprout', 7, 0.04, 0.32); add('tuft', 26, 0.0, 0.25);
+      for (i = 0; i < 4; i++) { var q = P.filter(function (p) { return p.k === 'tuft'; })[i]; q.thr = i * 0.012; }
+      P.filter(function (p) { return p.k === 'tree'; }).forEach(function (p, i) { p.x = 0.18 + i * 0.32 + r() * 0.08; });
+    },
+    burst: function () { for (var i = 0; i < 14; i++) this.fx.push({ x: this.w * Math.random(), y: this.h * 0.9, vx: (Math.random() - 0.5) * 1.2, vy: -(0.8 + Math.random() * 2), life: 1, ph: Math.random() * 6 }); },
+    draw: function (c, t, lvl, w, h) {
+      var u = h / 500, gh = h * 0.1, y0 = h - gh, sw = reduce ? 0 : 1;
+      var bg = c.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, mix('#2b2a26', '#2f9db8', lvl)); bg.addColorStop(1, mix('#4a4538', '#f6e7ae', lvl));
+      c.fillStyle = bg; c.fillRect(0, 0, w, h);
+      if (lvl > 0.45) { var k = (lvl - 0.45) / 0.55, sg = c.createRadialGradient(w * 0.8, h * 0.18, 0, w * 0.8, h * 0.18, w * 0.8); sg.addColorStop(0, 'rgba(255,240,180,' + 0.8 * k + ')'); sg.addColorStop(1, 'rgba(255,240,180,0)'); c.fillStyle = sg; c.fillRect(0, 0, w, h); }
+      var greens = ['#2f8f3a', '#46b14a', '#69d05a'];
+      this.plants.forEach(function (p) {
+        p.g += (Math.max(0, Math.min(1, (lvl - p.thr) / 0.2)) - p.g) * 0.05; if (p.g < 0.01) return;
+        var g = p.g, x = p.x * w, sway = Math.sin(t * 0.0015 + p.ph) * sw, gc = mix('#8a8a3a', greens[Math.floor(p.s * 2.99)].replace(/^#/, '#'), Math.min(1, lvl * 1.4));
+        c.fillStyle = gc; c.strokeStyle = gc;
+        if (p.k === 'tuft') { var hh = (12 + 14 * p.s) * u * g; for (var j = -1; j <= 1; j++) { var bx = x + j * 4 * u; c.beginPath(); c.moveTo(bx - 2 * u, y0); c.quadraticCurveTo(bx + sway * 3 * u, y0 - hh * 0.6, bx + sway * 6 * u + j * 3 * u, y0 - hh); c.quadraticCurveTo(bx + sway * 3 * u + 2 * u, y0 - hh * 0.5, bx + 2 * u, y0); c.fill(); } }
+        else if (p.k === 'sprout') { var sh = 34 * u * g * (0.8 + 0.4 * p.s); c.lineWidth = 2 * u; c.beginPath(); c.moveTo(x, y0); c.quadraticCurveTo(x + sway * 3 * u, y0 - sh * 0.5, x + sway * 5 * u, y0 - sh); c.stroke();
+          [-1, 1].forEach(function (d) { c.beginPath(); c.ellipse(x + sway * 5 * u + d * 7 * u * g, y0 - sh, 8 * u * g, 4 * u * g, d * -0.5, 0, 6.28); c.fill(); }); }
+        else if (p.k === 'flower') { var fh = (50 + 40 * p.s) * u * g, hx = x + sway * 4 * u; c.lineWidth = 2 * u; c.beginPath(); c.moveTo(x, y0); c.quadraticCurveTo(x + sway * 2 * u, y0 - fh * 0.5, hx, y0 - fh); c.stroke();
+          c.fillStyle = p.col; for (var a = 0; a < 5; a++) { c.beginPath(); c.arc(hx + Math.cos(a * 1.257) * 5 * u * g, y0 - fh + Math.sin(a * 1.257) * 5 * u * g, 4 * u * g, 0, 6.28); c.fill(); }
+          c.fillStyle = '#ffd23f'; c.beginPath(); c.arc(hx, y0 - fh, 3 * u * g, 0, 6.28); c.fill(); }
+        else if (p.k === 'bush') { var r0 = 16 * u * g * (1 + 0.3 * p.s); [[0, 0, 1], [-12, 3, 0.75], [12, 3, 0.75]].forEach(function (o, i) { c.fillStyle = greens[i % 3]; c.beginPath(); c.arc(x + o[0] * u * g, y0 - 8 * u * g + o[1] * u, r0 * o[2], 0, 6.28); c.fill(); }); }
+        else { var th = (70 + 50 * p.s) * u * g, cr = (28 + 12 * p.s) * u * g, tx = x + sway * 3 * u; c.fillStyle = '#6b4a2b'; c.fillRect(x - 3.5 * u, y0 - th, 7 * u, th + 3 * u);
+          [[0, -14, 1, 0], [-16, -2, 0.75, 1], [16, -2, 0.75, 2], [0, -30, 0.7, 2]].forEach(function (o) { c.fillStyle = greens[o[3]]; c.beginPath(); c.arc(tx + o[0] * u * g, y0 - th + o[1] * u * g, cr * o[2], 0, 6.28); c.fill(); }); }
+      });
+      // soil + grass strip
+      c.fillStyle = mix('#5a3d22', '#4a3220', lvl); c.fillRect(0, y0, w, gh);
+      c.fillStyle = mix('#8a8240', '#3fbf3a', Math.pow(lvl, 0.6)); c.fillRect(0, y0 - 2 * u, w, 7 * u);
+      // butterflies and birds arrive as the ecosystem recovers
+      if (lvl > 0.55) {
+        var al = Math.min(1, (lvl - 0.55) * 4), cols = ['#ff8ad0', '#ffd23f', '#8fd3ff'];
+        for (var i = 1; i <= 3; i++) {
+          var bx = w * (0.5 + 0.34 * Math.sin(t * 0.0004 * i + i)), by = h * (0.5 + 0.12 * Math.cos(t * 0.0006 * i + 2 * i)), f = Math.abs(Math.sin(t * 0.016 + i)) * 6 * u + 1;
+          c.globalAlpha = al; c.fillStyle = cols[i - 1]; c.beginPath(); c.ellipse(bx - 5 * u, by, 5 * u, f, 0.3, 0, 6.28); c.ellipse(bx + 5 * u, by, 5 * u, f, -0.3, 0, 6.28); c.fill(); c.globalAlpha = 1;
+        }
+      }
+      if (lvl > 0.85) {
+        var ba = Math.min(1, (lvl - 0.85) * 7); c.strokeStyle = 'rgba(255,255,255,' + ba + ')'; c.lineWidth = 2; c.lineCap = 'round';
+        for (i = 0; i < 2; i++) { var px = ((t * 0.03 + i * w * 0.5) % (w + 60)) - 30, py = h * (0.2 + 0.07 * i) + Math.sin(t * 0.002 + i) * 8, fl = Math.sin(t * 0.012 + i) * 3 * u;
+          c.beginPath(); c.moveTo(px - 8 * u, py - 3 * u + fl); c.quadraticCurveTo(px - 2 * u, py - 1 * u, px, py); c.quadraticCurveTo(px + 2 * u, py - 1 * u, px + 8 * u, py - 3 * u + fl); c.stroke(); }
+      }
+      // leaf sparkles when you gain points
+      this.fx = this.fx.filter(function (f) {
+        f.x += f.vx + Math.sin(t * 0.004 + f.ph) * 0.4; f.y += f.vy; f.vy += 0.012; f.life -= 0.01; if (f.life <= 0) return false;
+        c.globalAlpha = f.life; c.fillStyle = '#9bff6a'; c.beginPath(); c.ellipse(f.x, f.y, 5, 2.4, f.ph + t * 0.003, 0, 6.28); c.fill(); c.globalAlpha = 1; return true;
+      });
+    }
+  });
+
+  var air = new AirG('air');
+  var eco = new EcoG('eco');
+  var avg = document.getElementById('avg');
+
+  function loop(t) {
+    air.frame(t); eco.frame(t);
+    avg.textContent = Math.round((Math.min(1, air.v) + Math.min(1, eco.v)) / 2 * 100) + '%';
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  var A = 16, E = 5;
+  function apply() { air.set(A); eco.set(E); }
+  window.EcoMeters = {
+    set: function (a, e) { A = a; E = (e === undefined) ? a * 0.7 : e; apply(); },
+    add: function (a, e) { A = Math.min(100, A + a); E = Math.min(100, E + (e === undefined ? a * 0.7 : e)); apply(); },
+    reset: function () { A = 0; E = 0; air.target = 0; eco.target = 0; }
+  };
+
+  function sortItem() { EcoMeters.add(10, 7); }
+  document.getElementById('sort').onclick = sortItem;
+  document.getElementById('big').onclick = function () { EcoMeters.add(25, 18); };
+  document.getElementById('reset').onclick = function () { EcoMeters.reset(); };
+  window.addEventListener('keydown', function (e) { if (e.code === 'Space') { e.preventDefault(); sortItem(); } });
+
+  setTimeout(apply, 400); // opens by filling up to the starting values
+})();
+</script>
+</body>
+</html>

@@ -36,10 +36,6 @@ const manifest = [];
 const PH = [
   ['kloofendal_48d_partly_cloudy', 'hdri', 'public/assets/env.hdr'],
   ['brown_mud_leaves_01', 'tex', 'public/assets/ground_dead.jpg'],
-  ['aerial_grass_rock', 'tex', 'public/assets/ground_live.jpg'],
-  ['aerial_asphalt_01', 'tex', 'public/assets/road.jpg'],
-  ['rough_plasterbrick_05', 'tex', 'public/assets/wall.jpg'],
-  ['rocks_ground_02', 'tex', 'public/assets/rock.jpg'],
 ];
 for (const [id, kind, dest] of PH) {
   const ok = await polyhaven(id, kind, dest);

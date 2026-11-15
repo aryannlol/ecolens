@@ -5,7 +5,6 @@ export class Restoration {
   constructor() { this.rd = 0.05; this.air = 0.15; }
   tweenTo(r, duration = 1.8) { gsap.to(this, { rd: r, duration, ease: 'power2.inOut', overwrite: true }); }
   jump(r) { gsap.killTweensOf(this); this.rd = r; }
-  clearAir(amount = 0.28) { this.air = Math.min(1.0, this.air + amount); }
 }
 
 /** Per-world progress. r = r0 + (1 - r0) * sorted/total, so a world's start state is always the marker's state. */

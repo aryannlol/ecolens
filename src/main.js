@@ -17,6 +17,8 @@ import { HUD } from './ui/hud.js';
 import { sound } from './util/sound.js';
 import { show as showEndgame, hide as hideEndgame } from './ui/endgame.js';
 import { Haze } from './ui/haze.js';
+import { initQr, toggleQr } from './ui/qr.js';
+import { initControls } from './ui/controls.js';
 
 gsap.ticker.lagSmoothing(0); // keep animations on real time even if the frame rate dips
 const hud = new HUD();
@@ -158,63 +160,7 @@ document.getElementById('btn-show-results')?.addEventListener('click', () => {
   });
 });
 
-// QR modal & LAN IP auto-detection
-const qrModal = document.getElementById('qr-modal');
-const qrImg = document.getElementById('qr-img');
-const qrLink = document.getElementById('qr-link');
-const qrIpInput = document.getElementById('qr-ip-input');
-
-let detectedLanIp = (typeof __LAN_IP__ !== 'undefined' && __LAN_IP__) ? __LAN_IP__ : '';
-
-async function resolveLanIp() {
-  if (detectedLanIp) return detectedLanIp;
-  try {
-    const res = await fetch('/api/lan-ip');
-    if (res.ok) {
-      const data = await res.json();
-      if (data.ip) detectedLanIp = data.ip;
-    }
-  } catch {}
-  return detectedLanIp;
-}
-
-function updateQrDisplay() {
-  const current = new URL(window.location.href);
-  const isLocal = ['localhost', '127.0.0.1'].includes(current.hostname);
-  const inputIp = qrIpInput?.value.trim();
-  const host = inputIp || ((isLocal && detectedLanIp) ? detectedLanIp : current.hostname);
-  const port = current.port ? `:${current.port}` : '';
-  const url = `${current.protocol}//${host}${port}/markers.html`;
-
-  qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}`;
-  qrLink.href = url;
-  qrLink.textContent = url;
-}
-
-async function toggleQr(open) {
-  const show = open ?? qrModal.hasAttribute('hidden');
-  if (show) {
-    await resolveLanIp();
-    const current = new URL(window.location.href);
-    const isLocal = ['localhost', '127.0.0.1'].includes(current.hostname);
-    if (qrIpInput && !qrIpInput.value) {
-      qrIpInput.value = (isLocal && detectedLanIp) ? detectedLanIp : current.hostname;
-    }
-    updateQrDisplay();
-    qrModal.removeAttribute('hidden');
-  } else {
-    qrModal.setAttribute('hidden', '');
-  }
-}
-
-qrIpInput?.addEventListener('input', () => updateQrDisplay());
-document.getElementById('btn-qr')?.addEventListener('click', () => toggleQr(true));
-document.getElementById('btn-start-qr')?.addEventListener('click', () => toggleQr(true));
-document.getElementById('qr-close')?.addEventListener('click', () => toggleQr(false));
-qrModal?.addEventListener('click', (e) => { if (e.target === qrModal) toggleQr(false); });
-document.getElementById('btn-copy-link')?.addEventListener('click', () => {
-  navigator.clipboard.writeText(qrLink.href).then(() => hud.toast('Copied marker link to clipboard!', 'good'));
-});
+initQr(hud);
 
 function resetGame() {
   game.reset();
@@ -243,23 +189,7 @@ game.addEventListener('complete', ({ detail }) => {
 
 manager.addEventListener('world', () => hideEndgame());
 
-addEventListener('keydown', (e) => {
-  const k = e.key.toLowerCase();
-  if (e.key === 'Escape') { toggleQr(false); hideEndgame(); return; }
-  if (k === 'm') { toggleQr(); return; }
-  if (['1', '2', '3'].includes(k)) { if (mode === 'idle') startDemo(); hideEndgame(); manager.selectManual(['polluted', 'recovering', 'clean'][+k - 1]); }
-  if (k === 'l') toggleLock();
-  if (k === 'w') haze.triggerWKey(performance.now());
-  if (k === 'f') { const v = !manager.frozen; manager.setFrozen(v); input.inspect = v; hud.hint(v ? 'Inspect: drag to rotate, scroll to zoom, F to return' : 'Tracking resumed'); if (!v) { world.inspect.yaw = world.inspect.pitch = 0; world.inspect.zoom = 1; } }
-  if (k === 'r') { hideEndgame(); resetGame(); }
-  if (k === 'h') hud.showSkeleton = !hud.showSkeleton;
-});
-// inspect-mode orbit
-let drag = null;
-stage.canvas.addEventListener('pointerdown', (e) => { if (manager.frozen) drag = { x: e.clientX, y: e.clientY }; });
-addEventListener('pointerup', () => (drag = null));
-addEventListener('pointermove', (e) => { if (!drag) return; world.inspect.yaw -= (e.clientX - drag.x) * 0.008; world.inspect.pitch = THREE.MathUtils.clamp(world.inspect.pitch - (e.clientY - drag.y) * 0.006, -0.6, 0.9); drag = { x: e.clientX, y: e.clientY }; });
-stage.canvas.addEventListener('wheel', (e) => { if (manager.frozen) world.inspect.zoom = THREE.MathUtils.clamp(world.inspect.zoom * (e.deltaY > 0 ? 0.93 : 1.07), 0.5, 2.5); }, { passive: true });
+initControls({ manager, input, haze, world, game, hud, stage, toggleQr, hideEndgame, resetGame, startDemo });
 addEventListener('resize', () => stage.resize());
 
 // perf readout (?perf)
