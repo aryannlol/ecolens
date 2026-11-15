@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import { CONFIG } from '../config.js';
+import { updateStageGeom, videoToStage } from '../util/stageMap.js';
 
 /** Renderer, camera, webcam background and image-based lighting. */
 export class Stage {
@@ -25,22 +26,69 @@ export class Stage {
     }).catch(() => {});
   }
 
-  /** Match canvas to the video aspect, fit it to the window, and render at up to 1.5x pixel density for crisp edges. */
+  /** Match canvas to the video aspect, fit it to the window in cover mode, and render at up to 1.5x pixel density. */
   setSource(w, h) {
+    this.videoWidth = w;
+    this.videoHeight = h;
     this.aspect = w / h;
     const hf = (CONFIG.camera.hfovDeg * Math.PI) / 180;
-    this.camera.fov = (2 * Math.atan(Math.tan(hf / 2) / this.aspect) * 180) / Math.PI;
-    this.camera.aspect = this.aspect; this.camera.updateProjectionMatrix();
+    this.videoVFov = 2 * Math.atan(Math.tan(hf / 2) / this.aspect);
     this.resize();
   }
+
   resize() {
-    const s = Math.min(innerWidth / this.aspect, innerHeight) ; const cssH = Math.floor(s), cssW = Math.floor(s * this.aspect);
+    const W = innerWidth, H = innerHeight;
     const stage = document.getElementById('stage');
-    stage.style.width = cssW + 'px'; stage.style.height = cssH + 'px';
-    this.renderer.setPixelRatio(this.targetPixelRatio);
-    this.renderer.setSize(cssW, cssH, false);
-    this.canvas.style.width = cssW + 'px'; this.canvas.style.height = cssH + 'px';
-    const ov = document.getElementById('hand-overlay'); ov.width = cssW; ov.height = cssH; ov.style.width = cssW + 'px'; ov.style.height = cssH + 'px';
+    if (stage) {
+      stage.style.width = W + 'px';
+      stage.style.height = H + 'px';
+      stage.style.left = '0px';
+      stage.style.top = '0px';
+      stage.style.transform = 'none';
+    }
+
+    const vw = this.videoWidth || 1280, vh = this.videoHeight || 720;
+    const s = Math.max(W / vw, H / vh);
+    const visW = W / s, visH = H / s;
+    const cropX = (vw - visW) / 2, cropY = (vh - visH) / 2;
+    this.crop = { s, visW, visH, cropX, cropY, vw, vh, W, H, mirrored: true };
+    updateStageGeom(this.crop);
+
+    // Keep AR locked: constant focal length in video pixels
+    const videoVFov = this.videoVFov || (2 * Math.atan(Math.tan((CONFIG.camera.hfovDeg * Math.PI / 180) / 2) / (vw / vh)));
+    const f_px = (vh / 2) / Math.tan(videoVFov / 2);
+    this.camera.aspect = W / H;
+    this.camera.fov = (2 * Math.atan((visH / 2) / f_px) * 180) / Math.PI;
+    this.camera.updateProjectionMatrix();
+
+    // Video background crop
+    if (this.videoTexture) {
+      this.videoTexture.repeat.set(visW / vw, visH / vh);
+      this.videoTexture.offset.set((1 - this.videoTexture.repeat.x) / 2, (1 - this.videoTexture.repeat.y) / 2);
+    }
+
+    // Pixel ratio guard: max 2.1 million pixels
+    let pr = this.targetPixelRatio || Math.min(devicePixelRatio || 1, 1.25);
+    if (W * H * pr * pr > 2.1e6) {
+      pr = Math.sqrt(2.1e6 / (W * H));
+    }
+    this.renderer.setPixelRatio(pr);
+    this.renderer.setSize(W, H, false);
+
+    this.canvas.style.width = W + 'px';
+    this.canvas.style.height = H + 'px';
+
+    const ov = document.getElementById('hand-overlay');
+    if (ov) {
+      ov.width = W; ov.height = H;
+      ov.style.width = W + 'px'; ov.style.height = H + 'px';
+    }
+
+    if (this.onResize) this.onResize(W, H);
+  }
+
+  videoToStage(lx, ly) {
+    return videoToStage(lx, ly);
   }
   setVideo(video) {
     this.videoTexture = new THREE.VideoTexture(video); this.videoTexture.colorSpace = THREE.SRGBColorSpace;

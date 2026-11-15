@@ -57,10 +57,42 @@ function halo() {
 }
 
 /** One loose piece of waste. Shared geometry/materials, so spawning never allocates new assets. */
-export function createWaste(kind, variant, id) {
+export function createWaste(kind, variant, id, isRiver = false) {
   const root = new THREE.Group(), model = BUILDERS[kind](variant);
-  model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  model.traverse((o) => {
+    if (o.isMesh) {
+      o.castShadow = true; o.receiveShadow = true;
+      if (isRiver) {
+        o.material = o.material.clone();
+        o.material.color.set(0x383424);
+        o.material.roughness = 0.8;
+      }
+    }
+  });
   const h = halo(); root.add(model, h); root.scale.setScalar(1.55);
-  root.userData = { kind, variant, id, state: 'idle', home: new THREE.Vector3(), model, halo: h, baseScale: 1.55 };
+
+  let oilDisc = null;
+  if (isRiver) {
+    oilDisc = new THREE.Mesh(
+      new THREE.CircleGeometry(0.09, 24).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x141812, transparent: true, opacity: 0.6, depthWrite: false })
+    );
+    oilDisc.position.y = 0.002;
+    root.add(oilDisc);
+  }
+
+  root.userData = {
+    kind,
+    variant,
+    id,
+    state: 'idle',
+    home: new THREE.Vector3(),
+    model,
+    halo: h,
+    baseScale: 1.55,
+    isRiver,
+    oilDisc,
+    phase: Math.random() * 6.28,
+  };
   return root;
 }

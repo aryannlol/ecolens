@@ -28,8 +28,9 @@ const fx = new FX(world.fxGroup);
 const game = new Game({ world, restoration, bins, fx });
 const manager = new MarkerManager();
 const hand = new HandTracker();
-const input = new Input(hand, stage.canvas);
+const input = new Input(hand, stage.canvas, stage);
 const haze = new Haze(document.getElementById('stage'));
+stage.onResize = (w, h) => haze.resize(w, h);
 const grab = new GrabController({ stage, world, game, bins, haze });
 const demo = demoMatrix();
 let video = null, tracker = null, mode = 'idle', lastVT = -1, frame = 0, firstWorld = true;
@@ -43,7 +44,10 @@ manager.addEventListener('world', (e) => {
   gsap.fromTo(stage, { flash: 0 }, { flash: 1, duration: 0.25, yoyo: true, repeat: 1 });
   firstWorld = false; hud.setWorld(id, CONFIG.worlds[id].label);
   hud.setTracking(source === 'marker' ? `${CONFIG.worlds[id].label} marker` : 'Manual selection');
-  haze.setCoverage(id);
+});
+game.addEventListener('world', (e) => {
+  const { id, haze: stHaze } = e.detail;
+  haze.setDensityArray(stHaze, id);
   restoration.air = haze.air;
   hud.setAir(restoration.air);
 });
@@ -78,16 +82,6 @@ function toggleLock() {
   hud.toast(v ? 'Marker locked in place' : 'Marker tracking resumed', 'good');
   hud.hint(v ? 'Marker locked: position fixed · L to unlock' : 'Tracking resumed');
 }
-function clearSmog(dir = 1) {
-  haze.wipeAll(0.28);
-  restoration.air = haze.air;
-  world.atmo.gust(dir);
-  sound.wind();
-  hud.setAir(restoration.air);
-  if (restoration.air >= 0.85) hud.toast('Air is clear and crisp! Sunlight restored.', 'good');
-  else if (restoration.air >= 0.35) hud.toast('Smog clearing! You can now spot the waste.', 'good');
-  else hud.toast('Keep waving to blow away the heavy smog!', 'good');
-}
 document.getElementById('btn-cam').onclick = startWithCamera;
 document.getElementById('btn-demo').onclick = startDemo;
 document.getElementById('btn-lock').onclick = toggleLock;
@@ -106,6 +100,15 @@ btnSettings?.addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
   if (popover && !popover.contains(e.target) && e.target !== btnSettings) {
     popover.setAttribute('hidden', '');
+  }
+});
+
+// Fullscreen toggle (JOB 1)
+document.getElementById('btn-fullscreen')?.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
   }
 });
 
@@ -215,10 +218,6 @@ document.getElementById('btn-copy-link')?.addEventListener('click', () => {
 
 function resetGame() {
   game.reset();
-  const id = manager.activeWorld || 'polluted';
-  restoration.air = id === 'polluted' ? 0.15 : id === 'recovering' ? 0.6 : 1.0;
-  hud.setAir(restoration.air);
-  hud.setSmogVisual(restoration.air);
 }
 
 // Cinematic Endgame — uses the full-screen EcoEndgame overlay
@@ -232,7 +231,6 @@ game.addEventListener('complete', ({ detail }) => {
   // Purify air fully
   restoration.air = 1.0;
   hud.setAir(1.0);
-  hud.setSmogVisual(1.0);
 
   showEndgame({
     to: ENDGAME_MAP[worldId] || 'recovering',
@@ -251,7 +249,7 @@ addEventListener('keydown', (e) => {
   if (k === 'm') { toggleQr(); return; }
   if (['1', '2', '3'].includes(k)) { if (mode === 'idle') startDemo(); hideEndgame(); manager.selectManual(['polluted', 'recovering', 'clean'][+k - 1]); }
   if (k === 'l') toggleLock();
-  if (k === 'w') clearSmog(1);
+  if (k === 'w') haze.triggerWKey(performance.now());
   if (k === 'f') { const v = !manager.frozen; manager.setFrozen(v); input.inspect = v; hud.hint(v ? 'Inspect: drag to rotate, scroll to zoom, F to return' : 'Tracking resumed'); if (!v) { world.inspect.yaw = world.inspect.pitch = 0; world.inspect.zoom = 1; } }
   if (k === 'r') { hideEndgame(); resetGame(); }
   if (k === 'h') hud.showSkeleton = !hud.showSkeleton;
@@ -308,7 +306,7 @@ function loop(now) {
   if (airVal < 0.4 && now - haze.lastWipeTime > 4000) {
     hud.hint('Wave your open hand across the haze');
   } else if (now - haze.lastWipeTime <= 500 && document.getElementById('hint')?.textContent === 'Wave your open hand across the haze') {
-    hud.hint('Pinch pick waste · W wipe smog · F inspect');
+    hud.hint('Sort waste into the right bins to restore the world.');
   }
 
   if (mode === 'camera') {
@@ -330,12 +328,14 @@ function loop(now) {
       displayMatrix.compose(currPos, currQuat, currScale);
     }
     world.setPose(displayMatrix, true, dt);
-    const prof = world.update(t, dt, restoration.rd, restoration.air);
+    game.update(t, dt);
+    const riverMurk = game.riverMurk();
+    const prof = world.update(t, dt, restoration.rd, restoration.air, riverMurk);
     world.anchor.updateMatrixWorld(true);
     grab.update(input, dt, now);
     fx.update(dt);
     hud.setCursor(input, grab.state === 'holding' ? 'grab' : grab.state === 'hover' ? 'hover' : 'idle');
-    hud.drawHand(hand.landmarks);
+    hud.drawHand(hand.landmarks, input);
     hud.setMeter(restoration.rd);
     stage.render(prof, world.distance(), dt);
   } else {

@@ -8,9 +8,9 @@ export const CONFIG = {
   camera: { hfovDeg: 70, width: 1280, height: 720 },
   tracking: { switchFrames: 6, switchCooldownMs: 1500, lostAfterMs: 2000 },
   worlds: {
-    polluted:   { label: 'Polluted world',   r0: 0.05, items: 12, seed: 11 },
-    recovering: { label: 'Recovering world', r0: 0.5,  items: 7,  seed: 22 },
-    clean:      { label: 'Clean world',      r0: 0.95, items: 4,  seed: 33 },
+    polluted:   { label: 'Polluted world',   r0: 0.05, items: 12, river: 3, seed: 11 },
+    recovering: { label: 'Recovering world', r0: 0.5,  items: 7,  river: 1, seed: 22 },
+    clean:      { label: 'Clean world',      r0: 0.95, items: 4,  river: 0, seed: 33 },
   },
   bins: [
     { kind: 'plastic', label: 'Plastic', color: 0xf2c230, x: -0.72 },

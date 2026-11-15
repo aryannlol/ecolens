@@ -54,11 +54,11 @@ export class World {
   }
   distance() { return Math.max(1, new THREE.Vector3().setFromMatrixPosition(this.anchor.matrix).length()); }
 
-  update(t, dt, rd, air = 1) {
+  update(t, dt, rd, air = 1, riverMurk = 0) {
     const p = profileAt(rd, this.profile);
     this.content.rotation.set(Math.PI / 2 + this.tilt + this.inspect.pitch, this.inspect.yaw, 0, 'XYZ');
     this.content.scale.setScalar((1.25 / HALF) * this.inspect.zoom);
-    this.terrain.update(rd); this.river.update(t, dt, rd, p); this.grass.update(t, rd); this.forest.update(t, rd);
+    this.terrain.update(rd); this.river.update(t, dt, rd, p, riverMurk); this.grass.update(t, rd); this.forest.update(t, rd);
     this.town.update(rd); this.sky.update(t, p, rd); this.far.update(rd, p); this.atmo.update(t, dt, rd, p, air); this.wildlife.update(t, rd);
     if (this.atmo.wind > 0) p.fogK *= Math.max(0.15, 1 - this.atmo.wind * 0.75);
     this.sun.color.copy(p.sun); this.sun.intensity = p.sunI; this.hemi.color.copy(p.hemiSky); this.hemi.groundColor.copy(p.hemiGround); this.hemi.intensity = p.hemiI;

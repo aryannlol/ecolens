@@ -42,10 +42,16 @@ export class River {
     this.group = new THREE.Group(); this.group.add(this.mesh, this.debris);
     this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._p = new THREE.Vector3(); this._s = new THREE.Vector3(); this._e = new THREE.Euler();
   }
-  update(t, dt, rd, prof) {
+  update(t, dt, rd, prof, riverMurk = 0) {
     this.normal.offset.y -= dt * 0.045; this.normal.offset.x += dt * 0.008;
     const m = this.material;
-    m.color.copy(prof.water); m.opacity = prof.waterOpacity; m.roughness = prof.waterRough; m.iridescence = Math.max(0.02, prof.sheen); m.envMapIntensity = 0.6 + rd;
+    const murky = new THREE.Color(0x3d3522);
+    const targetColor = prof.water.clone().lerp(murky, Math.min(1, riverMurk * 0.8));
+    m.color.copy(targetColor);
+    m.opacity = prof.waterOpacity;
+    m.roughness = THREE.MathUtils.lerp(prof.waterRough, 0.35, riverMurk);
+    m.iridescence = Math.max(0.02, prof.sheen * (1 - riverMurk * 0.75));
+    m.envMapIntensity = 0.6 + rd;
     for (let i = 0; i < this.deb.length; i++) {
       const d = this.deb[i]; d.z += d.sp * dt; if (d.z > HALF - 0.05) d.z = -HALF + 0.05;
       const vis = 1 - Math.min(1, Math.max(0, (rd - (d.thr - 0.08)) / 0.08)); // gone once rd passes its threshold

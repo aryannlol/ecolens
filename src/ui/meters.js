@@ -149,32 +149,35 @@ inherit(EcoG, {
 
 // ---- CSS ----
 const CSS = `
-#eco-meters{position:absolute;right:clamp(16px,2.8vw,44px);top:50%;transform:translateY(-50%);display:flex;align-items:center;z-index:10;pointer-events:none;font-family:var(--font,'Bricolage Grotesque',system-ui,sans-serif)}
-.em-gauge{position:relative;width:clamp(150px,17vw,285px);height:clamp(340px,62vh,590px);pointer-events:none;border-radius:36px;padding:clamp(46px,8.5vh,64px) 14px 16px;display:flex;flex-direction:column;align-items:center;
+#eco-meters{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:12px;z-index:10;pointer-events:none;font-family:var(--font,'Bricolage Grotesque',system-ui,sans-serif)}
+.em-gauge{position:relative;width:clamp(96px,8vw,132px);height:clamp(300px,56vh,500px);pointer-events:none;border-radius:30px;padding:clamp(34px,5vh,44px) 8px 10px;display:flex;flex-direction:column;align-items:center;
   background:linear-gradient(180deg,#0f3d27 0%,#072617 100%);border:3px solid #2e9a4f;
-  box-shadow:0 0 28px rgba(60,220,110,0.45),inset 0 2px 0 rgba(255,255,255,0.22);transition:transform .3s ease}
+  box-shadow:0 0 24px rgba(60,220,110,0.4),inset 0 2px 0 rgba(255,255,255,0.22);transition:transform .3s ease}
 .em-gauge.em-pulse{animation:em-pulse .9s ease-out}
 @keyframes em-pulse{0%{transform:scale(1)}25%{transform:scale(1.03)}100%{transform:scale(1)}}
-.em-head{position:absolute;top:14px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:8px;font-weight:800;font-size:clamp(1.05rem,1.7vw,1.45rem);letter-spacing:.05em;color:#ffffff;text-transform:uppercase}
-.em-head svg{width:clamp(20px,2.2vw,28px);height:clamp(20px,2.2vw,28px);color:#56ff78}
-.em-well{position:relative;flex:1;width:100%;border-radius:28px;overflow:hidden;background:#031109;border:2px solid rgba(120,255,170,0.35);box-shadow:inset 0 0 16px rgba(0,0,0,0.7)}
+.em-head{position:absolute;top:10px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:5px;font-weight:800;font-size:clamp(11px,1vw,15px);letter-spacing:.05em;color:#ffffff;text-transform:uppercase}
+.em-head svg{width:clamp(14px,1.2vw,18px);height:clamp(14px,1.2vw,18px);color:#56ff78}
+.em-well{position:relative;flex:1;width:100%;border-radius:22px;overflow:hidden;background:#031109;border:2px solid rgba(120,255,170,0.35);box-shadow:inset 0 0 16px rgba(0,0,0,0.7)}
 .em-well canvas{position:absolute;inset:0;width:100%;height:100%}
-.em-well::after{content:'';position:absolute;left:8px;top:12px;width:6px;height:65%;border-radius:99px;background:linear-gradient(180deg,rgba(255,255,255,0.45) 0%,rgba(255,255,255,0.05) 80%,transparent 100%);pointer-events:none;z-index:2}
-.em-pct{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);font-weight:800;font-size:clamp(2.1rem,3.6vw,3.3rem);color:#ffffff;text-shadow:0 2px 14px rgba(0,0,0,0.7),0 0 24px rgba(0,0,0,0.4);z-index:3;pointer-events:none;letter-spacing:-0.02em}
-.em-cap{position:absolute;top:calc(42% + clamp(1.8rem,2.7vw,2.4rem));left:0;right:0;text-align:center;font-weight:800;font-size:clamp(0.75rem,1.15vw,1.05rem);letter-spacing:.12em;text-transform:uppercase;color:#ffffff;text-shadow:0 2px 10px rgba(0,0,0,0.75);z-index:3;pointer-events:none}
+.em-well::after{content:'';position:absolute;left:6px;top:10px;width:5px;height:65%;border-radius:99px;background:linear-gradient(180deg,rgba(255,255,255,0.45) 0%,rgba(255,255,255,0.05) 80%,transparent 100%);pointer-events:none;z-index:2}
+.em-pct{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);font-weight:800;font-size:clamp(20px,2vw,30px);color:#ffffff;text-shadow:0 2px 14px rgba(0,0,0,0.7),0 0 24px rgba(0,0,0,0.4);z-index:3;pointer-events:none;letter-spacing:-0.02em}
+.em-cap{position:absolute;top:calc(40% + clamp(18px,1.8vw,26px));left:0;right:0;text-align:center;font-weight:700;font-size:clamp(8px,0.7vw,11px);letter-spacing:.1em;text-transform:uppercase;color:#ffffff;text-shadow:0 2px 10px rgba(0,0,0,0.75);z-index:3;pointer-events:none}
 .em-tick{display:none}
-.em-link{position:relative;width:clamp(66px,7.5vw,94px);aspect-ratio:1;display:grid;place-content:center;text-align:center;z-index:12;margin:0 clamp(-26px,-2.2vw,-14px);background:rgba(10,38,24,0.92);border-radius:50%;box-shadow:0 6px 20px rgba(0,0,0,0.55)}
-.em-link::before{content:'';position:absolute;inset:-3px;border-radius:50%;border:2.5px dashed #56ff78;animation:em-spin 20s linear infinite;box-shadow:0 0 14px rgba(86,255,120,0.4)}
-.em-link-content{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}
-.em-link-leaf{width:clamp(14px,1.5vw,18px);height:clamp(14px,1.5vw,18px);color:#56ff78;margin-bottom:2px}
-.em-link b{font-size:clamp(0.95rem,1.5vw,1.35rem);font-weight:800;color:#ffffff}
-.em-link small{font-size:clamp(0.48rem,0.7vw,0.62rem);color:#9fe2a8;font-variant:all-small-caps;letter-spacing:.12em;font-weight:700}
+.em-link{position:relative;width:64px;height:64px;aspect-ratio:1;display:grid;place-content:center;text-align:center;z-index:12;margin:0 -38px;background:rgba(10,38,24,0.94);border-radius:50%;box-shadow:0 6px 20px rgba(0,0,0,0.55);flex-shrink:0}
+.em-link::before{content:'';position:absolute;inset:-3px;border-radius:50%;border:2px dashed #56ff78;animation:em-spin 20s linear infinite;box-shadow:0 0 12px rgba(86,255,120,0.4)}
+.em-link-content{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.em-link-leaf{width:12px;height:12px;color:#56ff78;margin-bottom:1px}
+.em-link b{font-size:13px;font-weight:800;color:#ffffff}
+.em-link small{font-size:8px;color:#9fe2a8;font-variant:all-small-caps;letter-spacing:.1em;font-weight:700}
 @keyframes em-spin{to{transform:rotate(360deg)}}
 @media (max-width:700px){
-  .em-gauge{width:92px;height:260px;border-radius:24px;padding:36px 6px 8px}
-  .em-pct{font-size:1.4rem;top:40%}
-  .em-cap{font-size:0.55rem;top:calc(40% + 1.2rem)}
-  .em-link{width:52px;margin:0 -12px}
+  .em-gauge{width:84px;height:240px;border-radius:20px;padding:26px 4px 6px}
+  .em-head{font-size:10px;top:6px}
+  .em-pct{font-size:16px;top:38%}
+  .em-cap{font-size:7.5px;top:calc(38% + 16px)}
+  .em-link{width:50px;height:50px;margin:0 -31px}
+  .em-link b{font-size:11px}
+  .em-link small{font-size:7px}
 }
 @media(prefers-reduced-motion:reduce){.em-gauge.em-pulse,.em-link::before{animation:none}}`;
 

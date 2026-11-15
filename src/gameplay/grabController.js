@@ -17,6 +17,7 @@ export class GrabController {
     Object.assign(this, { stage, world, game, bins, haze });
     this.hover = null; this.held = null; this.latch = null; this.latchT = 0; this.prevPinch = false; this.overBin = null;
     this.hoverRiver = false;
+    this.lastRiverCleanToast = 0;
     this.ray = new THREE.Raycaster(); this.inv = new THREE.Matrix4(); this.tmp = new THREE.Vector3(); this.target = new THREE.Vector3(); this.last = new THREE.Vector3(); this.lastX = 0;
     this.state = 'idle';
   }
@@ -33,12 +34,17 @@ export class GrabController {
           checkNdc = this.tmp;
         }
         if (this.haze && this.haze.densityAt(checkNdc) > 0.55) {
-          this.game.emit('toast', { text: 'Haze here — wipe it away with your hand', tone: 'bad' });
+          this.game.emit('toast', { text: 'Haze here, wipe it away with your hand', tone: 'bad' });
         } else {
           if (pick && pick.userData.state === 'idle') this._grab(pick);
-          else {
-            const rpt = this._checkRiver(input);
-            if (rpt) { sound.splash(); const m = this.game.scoopRiver(rpt); if (m) this._grab(m); }
+          else if (this._checkRiver(input)) {
+            const remRiver = this.game.remainingRiverCount();
+            if (remRiver > 0) {
+              this.game.emit('toast', { text: 'Pick up the floating sludge', tone: 'bad' });
+            } else if (now - this.lastRiverCleanToast > 5000) {
+              this.lastRiverCleanToast = now;
+              this.game.emit('toast', { text: 'The river is clean', tone: 'good' });
+            }
           }
         }
       }
@@ -76,6 +82,9 @@ export class GrabController {
     this.held = item; item.userData.state = 'held'; gsap.killTweensOf(item.position);
     sound.grab();
     gsap.to(item.userData.halo.material, { opacity: 1, duration: 0.1 }); gsap.to(item.userData.halo.scale, { x: 0.46, y: 0.46, duration: 0.15 });
+    if (item.userData.oilDisc) {
+      gsap.to(item.userData.oilDisc.scale, { x: 0, y: 0, z: 0, duration: 0.15 });
+    }
     this.target.copy(item.position); this.last.copy(item.position);
   }
 
@@ -107,8 +116,14 @@ export class GrabController {
     const gy = heightAt(item.position.x, item.position.z);
     if (gy < 0.0) { // dropped in the river: put it back
       item.userData.state = 'busy'; const h = item.userData.home;
+      if (item.userData.oilDisc) gsap.to(item.userData.oilDisc.scale, { x: 1, y: 1, z: 1, duration: 0.3, delay: 0.5 });
       gsap.to(item.position, { x: h.x, y: h.y + 0.15, z: h.z, duration: 0.5, ease: 'power2.inOut' }); gsap.to(item.position, { y: h.y, duration: 0.2, delay: 0.5, onComplete: () => { item.userData.state = 'idle'; } });
       this.game.emit('toast', { text: 'Not there. Drop it in a bin.', tone: 'bad' }); return;
+    }
+    // dropped on land: becomes a normal land item
+    if (item.userData.isRiver) {
+      item.userData.isRiver = false;
+      if (item.userData.oilDisc) item.userData.oilDisc.visible = false;
     }
     item.userData.state = 'busy';
     gsap.to(item.position, { y: gy, duration: 0.3, ease: 'bounce.out', onComplete: () => { item.userData.state = 'idle'; item.userData.home.set(item.position.x, gy, item.position.z); } });

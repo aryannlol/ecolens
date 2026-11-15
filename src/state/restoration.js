@@ -12,6 +12,7 @@ export class Restoration {
 export class WorldState {
   constructor(id, def, spawnItems) {
     this.id = id; this.r0 = def.r0; this.total = def.items; this.sorted = 0; this.items = spawnItems;
+    this.completed = false;
   }
   get r() { return this.r0 + (1 - this.r0) * (this.sorted / this.total); }
   get remaining() { return this.items.filter((i) => !i.done); }

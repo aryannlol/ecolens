@@ -9,7 +9,7 @@ body[data-world="clean"] { --accent: #6fe0cf; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #050a08; color: var(--text); font-family: var(--font); }
 
-#stage { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); overflow: hidden; }
+#stage { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hidden; }
 #gl, #hand-overlay { position: absolute; inset: 0; display: block; }
 #hand-overlay { pointer-events: none; z-index: 3; }
 #gl { touch-action: none; cursor: crosshair; z-index: 1; }
