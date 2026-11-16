@@ -18,7 +18,10 @@ export const CONFIG = {
     { kind: 'metal',   label: 'Metal',   color: 0x9aa7b3, x: 0.16 },
     { kind: 'organic', label: 'Organic', color: 0x4aa84f, x: 0.54 },
   ],
-  hand: { grabMeters: 0.026, releaseMeters: 0.042, lostGraceMs: 300 },
+  // mirror = selfie view: the WebGL canvas (webcam + diorama) is flipped with CSS, the diorama is counter-flipped so it reads
+  // normally, and the hand/cursor/brush use mirrored screen coordinates. Hand, cursor and image all move the same way.
+  // Add ?mirror=0 to the URL for the raw un-mirrored camera view.
+  hand: { grabMeters: 0.026, releaseMeters: 0.042, lostGraceMs: 300, mirror: new URLSearchParams(location.search).get('mirror') !== '0' },
   diorama: { size: 2.4, holdHeight: 0.34, viewElevationDeg: 36, binZ: -0.15 },
 };
 export const BIN_NAME = { plastic: 'yellow', paper: 'blue', metal: 'grey', organic: 'green' };

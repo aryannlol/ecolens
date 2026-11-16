@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { rng, smooth } from '../util/math.js';
-import { riverX } from './terrain.js';
+import { riverX, heightAt, HALF } from './terrain.js';
 
 /** Butterflies, birds and fish. Each species appears once recovery passes its own threshold. */
 export class Wildlife {

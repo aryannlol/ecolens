@@ -5,6 +5,7 @@ import { heightAt } from '../scene/terrain.js';
 
 function labelSprite(kind, text, color) {
   const c = document.createElement('canvas'); c.width = 512; c.height = 160; const g = c.getContext('2d');
+  if (CONFIG.hand.mirror) { g.translate(c.width, 0); g.scale(-1, 1); } // sprites are not counter-flipped like the diorama
   g.fillStyle = 'rgba(10,20,16,0.84)'; g.beginPath(); g.roundRect(8, 16, 496, 128, 40); g.fill();
   g.strokeStyle = 'rgba(255,255,255,0.18)'; g.lineWidth = 4; g.stroke();
 

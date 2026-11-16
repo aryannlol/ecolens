@@ -31,7 +31,7 @@ export class GrabController {
         let checkNdc = input.ndc;
         if (pick) {
           this.tmp.set(0, 0.07, 0); pick.localToWorld(this.tmp); this.tmp.project(this.stage.camera);
-          checkNdc = this.tmp;
+          checkNdc = { x: CONFIG.hand.mirror ? -this.tmp.x : this.tmp.x, y: this.tmp.y }; // render -> screen space for the haze lookup
         }
         if (this.haze && this.haze.densityAt(checkNdc) > 0.55) {
           this.game.emit('toast', { text: 'Haze here, wipe it away with your hand', tone: 'bad' });
@@ -54,7 +54,7 @@ export class GrabController {
   }
 
   _checkRiver(input) {
-    const { o, d } = this._localRay(input.ndc);
+    const { o, d } = this._localRay(input.rayNdc);
     if (d.y >= -1e-4) return null;
     const t = (0.01 - o.y) / d.y;
     if (t <= 0) return null;
@@ -70,7 +70,7 @@ export class GrabController {
     let best = null, bd = HOVER_R; const aspect = this.stage.aspect;
     if (input.present) for (const m of this.game.idle()) {
       this.tmp.set(0, 0.07, 0); m.localToWorld(this.tmp); this.tmp.project(this.stage.camera);
-      const d = Math.hypot((this.tmp.x - input.ndc.x) * aspect, this.tmp.y - input.ndc.y);
+      const d = Math.hypot((this.tmp.x - input.rayNdc.x) * aspect, this.tmp.y - input.rayNdc.y);
       if (d < bd) { bd = d; best = m; }
     }
     if (best !== this.hover) { if (this.hover) gsap.to(this.hover.userData.halo.material, { opacity: 0, duration: 0.15 }); if (best) gsap.to(best.userData.halo.material, { opacity: 0.9, duration: 0.15 }); }
@@ -96,7 +96,7 @@ export class GrabController {
   }
 
   _drag(input, dt) {
-    const item = this.held, { o, d } = this._localRay(input.ndc), holdY = CONFIG.diorama.holdHeight;
+    const item = this.held, { o, d } = this._localRay(input.rayNdc), holdY = CONFIG.diorama.holdHeight;
     if (d.y < -1e-3) { const t = (holdY - o.y) / d.y; if (t > 0) { this.target.set(THREE.MathUtils.clamp(o.x + d.x * t, -HALF + 0.1, HALF - 0.1), holdY, THREE.MathUtils.clamp(o.z + d.z * t, -HALF + 0.1, HALF - 0.1)); } }
     const k = 1 - Math.exp(-20 * dt); item.position.lerp(this.target, k);
     const vx = (item.position.x - this.last.x) / Math.max(dt, 1e-3); this.last.copy(item.position);

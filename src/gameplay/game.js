@@ -99,8 +99,7 @@ export class Game extends EventTarget {
   }
 
   _complete(st) {
-    if (st.completed) return;
-    st.completed = true;
+    if (st.completed) return; st.completed = true; // two sort animations can finish together: complete a world once only
     sound.complete();
     this.emit('toast', { text: `${CONFIG.worlds[st.id].label} restored`, tone: 'good' });
     const c = new THREE.Vector3(0, 0.05, 0.3);

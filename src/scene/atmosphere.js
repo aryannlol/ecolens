@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { rng, smooth, lerp } from '../util/math.js';
-import { HALF } from './terrain.js';
+import { heightAt, HALF } from './terrain.js';
 
 function puffTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');

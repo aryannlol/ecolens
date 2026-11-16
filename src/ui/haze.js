@@ -37,6 +37,7 @@ export class Haze {
     this.lastWipeTime = 0;
     this.lastGustTime = 0;
     this.air = 1.0;
+    this.drift = 0; // field offset in grid cells; used by draw, wipe and lookup so they always agree
 
     // Offscreen 192x108 canvas for density upload
     this.offCanvas = document.createElement('canvas');
@@ -48,12 +49,13 @@ export class Haze {
     // Visible canvas inside #stage
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'haze';
-    this.canvas.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;';
+    this.canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;';
     stageEl.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d');
 
-    // Wipe feedback (no secondary smoothing)
-    this.prevBrush = null;
+    // Wipe smoothing & feedback
+    this.smoothCursor = null;
+    this.prevCursor = null;
     this.motes = [];
     this.wKeyAnim = null;
 
@@ -84,8 +86,6 @@ export class Haze {
     const height = h || r.height || innerHeight;
     this.canvas.width = Math.floor(width);
     this.canvas.height = Math.floor(height);
-    this.canvas.style.width = width + 'px';
-    this.canvas.style.height = height + 'px';
   }
 
   setDensityArray(density, world) {
@@ -102,16 +102,12 @@ export class Haze {
     return sum / len;
   }
 
-  densityAt(pos) {
-    if (!pos || !this.density) return 0;
-    let sx = pos.x, sy = pos.y;
-    // If coordinate is in Three.js NDC (-1..1), convert to stage 0..1
-    if (sx < 0 || sy < 0 || ('isVector2' in pos) || ('isVector3' in pos)) {
-      sx = pos.x * 0.5 + 0.5;
-      sy = -pos.y * 0.5 + 0.5;
-    }
-    const gx = Math.floor(Math.max(0, Math.min(this.gw - 1, sx * this.gw)));
-    const gy = Math.floor(Math.max(0, Math.min(this.gh - 1, sy * this.gh)));
+  densityAt(ndc) {
+    if (!ndc || !this.density) return 0;
+    const nx = ndc.x * 0.5 + 0.5;
+    const ny = -ndc.y * 0.5 + 0.5;
+    const gx = Math.floor(Math.max(0, Math.min(this.gw - 1, nx * this.gw + this.drift)));
+    const gy = Math.floor(Math.max(0, Math.min(this.gh - 1, ny * this.gh)));
     return this.density[gy * this.gw + gx];
   }
 
@@ -129,7 +125,7 @@ export class Haze {
       const px = x0 + (x1 - x0) * t;
       const py = y0 + (y1 - y0) * t;
 
-      const gx = (px / W) * this.gw;
+      const gx = (px / W) * this.gw + this.drift;
       const gy = (py / H) * this.gh;
       const gr = (radiusPx / H) * this.gh;
 
@@ -142,11 +138,13 @@ export class Haze {
         for (let x = minX; x <= maxX; x++) {
           const d = Math.hypot(x - gx, y - gy);
           if (d < gr) {
-            const falloff = 1 - d / gr;
+            // flat core (full strength inside 55% of the radius) with a soft edge, so a pass leaves a clean path
+            const falloff = d < gr * 0.55 ? 1 : (1 - d / gr) / 0.45;
             const idx = y * this.gw + x;
             const oldVal = this.density[idx];
-            const decr = 3.0 * strength * falloff * subDt;
-            const newVal = Math.max(0, oldVal - decr);
+            const decr = 7.0 * strength * falloff * subDt;
+            let newVal = Math.max(0, oldVal - decr);
+            if (newVal < 0.08) newVal = 0; // snap thin leftovers to clear so wiping actually finishes
             this.density[idx] = newVal;
             removedTotal += (oldVal - newVal);
           }
@@ -182,7 +180,9 @@ export class Haze {
     const W = this.canvas.width || 1280;
     const H = this.canvas.height || 720;
     const timeSec = now / 1000;
-    const driftX = (timeSec * 0.01) % 1;
+    // Bounded drift (+-1.4 cells, ~0.7% of the width). It used to scroll the whole field up to 100% of the
+    // width, so the hole you wiped slid away from your hand and the smog seemed to come back.
+    this.drift = Math.sin(timeSec * 0.35) * 1.4;
     const wobble = 1 + 0.06 * Math.sin(timeSec * 1.5);
 
     // 1. W key animation: 25% clear over 0.6s
@@ -199,10 +199,10 @@ export class Haze {
       if (progress >= 1) this.wKeyAnim = null;
     }
 
-    // 2. Brush tracking & wiping (single smoothing layer from handTracker, no second layer)
+    // 2. Cursor tracking & wiping
     let canWipe = false;
     let handPresent = false;
-    let brushX = 0, brushY = 0;
+    let rawX = 0, rawY = 0;
     let palmSpeed = 0;
 
     if (input && input.present) {
@@ -214,24 +214,42 @@ export class Haze {
       } else if (input.source === 'mouse' && input.mouse.down && !isHolding) {
         canWipe = true;
       }
-      const bp = input.brushPos || input.stageCursor || { x: 0.5, y: 0.5 };
-      brushX = bp.x * W;
-      brushY = bp.y * H;
-      palmSpeed = input.palmSpeed || 0;
+      // Use palm NDC for brush position when hand mode; fallback to cursor ndc
+      const brushNdc = (input.source === 'hand' && input.palmNdc) ? input.palmNdc : input.ndc;
+      rawX = (brushNdc.x * 0.5 + 0.5) * W;
+      rawY = (-brushNdc.y * 0.5 + 0.5) * H;
+      palmSpeed = (input.source === 'hand' && input.hand?.palmSpeed != null) ? input.hand.palmSpeed : 0;
     }
 
-    let radiusPx = Math.max(70, 0.14 * H);
-    if (palmSpeed > 1.0) radiusPx *= 2;
-    const strength = Math.max(0.3, Math.min(1, palmSpeed / 0.4));
+    let speedStageH = 0;
+    let strength = 0.25;
+    let radiusPx = Math.max(70, 0.16 * H);
 
     if (handPresent) {
-      const cur = { x: brushX, y: brushY };
-      if (this.prevBrush && canWipe) {
-        this._sweep(this.prevBrush.x, this.prevBrush.y, cur.x, cur.y, radiusPx, strength, dt, now, W, H, sound, atmo);
+      // Light low-pass smoothing (alpha 0.5)
+      if (!this.smoothCursor) {
+        this.smoothCursor = { x: rawX, y: rawY };
+        this.prevCursor = { x: rawX, y: rawY };
+      } else {
+        this.smoothCursor.x = this.smoothCursor.x * 0.5 + rawX * 0.5;
+        this.smoothCursor.y = this.smoothCursor.y * 0.5 + rawY * 0.5;
       }
-      this.prevBrush = cur;
+
+      if (this.prevCursor) {
+        const segDist = Math.hypot(this.smoothCursor.x - this.prevCursor.x, this.smoothCursor.y - this.prevCursor.y);
+        // Use hand.palmSpeed (computed at detection time) if available, else frame delta fallback
+        speedStageH = palmSpeed > 0 ? palmSpeed : (dt > 0 ? (segDist / H) / dt : 0);
+        if (speedStageH > 1.0) radiusPx *= 2;
+        strength = Math.max(0.3, Math.min(1, speedStageH / 0.4));
+
+        if (canWipe) {
+          this._sweep(this.prevCursor.x, this.prevCursor.y, this.smoothCursor.x, this.smoothCursor.y, radiusPx, strength, dt, now, W, H, sound, atmo);
+        }
+      }
+      this.prevCursor = { x: this.smoothCursor.x, y: this.smoothCursor.y };
     } else {
-      this.prevBrush = null;
+      this.smoothCursor = null;
+      this.prevCursor = null;
     }
 
     // 3. Strict Regrowth:
@@ -266,8 +284,11 @@ export class Haze {
       const gw = this.gw, gh = this.gh;
       for (let y = 0; y < gh; y++) {
         for (let x = 0; x < gw; x++) {
-          const sx = Math.floor((x + driftX * gw) % gw);
-          const d = this.density[y * gw + sx];
+          const fx = x + this.drift;
+          const x0 = Math.max(0, Math.min(gw - 1, Math.floor(fx)));
+          const x1 = Math.min(gw - 1, x0 + 1);
+          const tx = Math.max(0, Math.min(1, fx - x0));
+          const d = this.density[y * gw + x0] * (1 - tx) + this.density[y * gw + x1] * tx;
           const i = (y * gw + x) * 4;
           data[i] = 110;
           data[i + 1] = 92;
@@ -285,12 +306,12 @@ export class Haze {
     }
 
     // 5. Draw soft outlined brush ring around cursor while an open hand is present
-    if (handPresent && (input.source === 'hand' || input.source === 'mouse')) {
+    if (handPresent && this.smoothCursor && (input.source === 'hand' && !input.pinching || input.source === 'mouse')) {
       this.ctx.save();
       this.ctx.lineWidth = 2;
       this.ctx.strokeStyle = canWipe ? 'rgba(255, 255, 255, 0.75)' : 'rgba(255, 255, 255, 0.35)';
       this.ctx.beginPath();
-      this.ctx.arc(brushX, brushY, radiusPx, 0, 6.28);
+      this.ctx.arc(this.smoothCursor.x, this.smoothCursor.y, radiusPx, 0, 6.28);
       this.ctx.stroke();
       this.ctx.restore();
     }

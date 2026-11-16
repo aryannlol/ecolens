@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import { CONFIG } from '../config.js';
-import { updateStageGeom } from '../util/stageMap.js';
 
 /** Renderer, camera, webcam background and image-based lighting. */
 export class Stage {
   constructor(canvas) {
     this.canvas = canvas;
+    if (CONFIG.hand.mirror) canvas.style.transform = 'scaleX(-1)'; // selfie view
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -19,14 +19,11 @@ export class Stage {
     this.targetPixelRatio = Math.min(devicePixelRatio || 1, 1.25);
     this.frameTimes = [];
     const pm = new THREE.PMREMGenerator(this.renderer);
-    this.scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
-    new RGBELoader().load('/assets/env.hdr', (tex) => {
-      tex.mapping = THREE.EquirectangularReflectionMapping;
-      this.scene.environment = pm.fromEquirectangular(tex).texture;
-      tex.dispose();
-    }, undefined, () => {
-      // RoomEnvironment fallback already active
-    });
+    this.scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; // replaced by the HDRI if present
+    fetch('/assets/env.hdr', { method: 'HEAD' }).then((r) => {
+      if (!r.ok || !(r.headers.get('content-type') || '').match(/octet|hdr|image/)) return;
+      new RGBELoader().load('/assets/env.hdr', (tex) => { tex.mapping = THREE.EquirectangularReflectionMapping; this.scene.environment = pm.fromEquirectangular(tex).texture; tex.dispose(); });
+    }).catch(() => {});
   }
 
   /** Match canvas to the video aspect, fit it to the window in cover mode, and render at up to 1.5x pixel density. */
@@ -54,8 +51,7 @@ export class Stage {
     const s = Math.max(W / vw, H / vh);
     const visW = W / s, visH = H / s;
     const cropX = (vw - visW) / 2, cropY = (vh - visH) / 2;
-    this.crop = { s, visW, visH, cropX, cropY, vw, vh, W, H, mirrored: true };
-    updateStageGeom(this.crop);
+    this.crop = { s, visW, visH, cropX, cropY, vw, vh, W, H };
 
     // Keep AR locked: constant focal length in video pixels
     const videoVFov = this.videoVFov || (2 * Math.atan(Math.tan((CONFIG.camera.hfovDeg * Math.PI / 180) / 2) / (vw / vh)));
@@ -90,6 +86,17 @@ export class Stage {
     if (this.onResize) this.onResize(W, H);
   }
 
+  videoToStage(lx, ly, mirrored = CONFIG.hand.mirror) {
+    if (!this.crop) {
+      const x = mirrored ? (1 - lx) : lx;
+      return { x, y: ly };
+    }
+    const { vw, vh, visW, visH, cropX, cropY } = this.crop;
+    const x = mirrored ? (1 - lx) : lx;
+    const x_stage = Math.max(0, Math.min(1, (x * vw - cropX) / visW));
+    const y_stage = Math.max(0, Math.min(1, (ly * vh - cropY) / visH));
+    return { x: x_stage, y: y_stage };
+  }
   setVideo(video) {
     this.videoTexture = new THREE.VideoTexture(video); this.videoTexture.colorSpace = THREE.SRGBColorSpace;
     this.scene.background = this.videoTexture; this.setSource(video.videoWidth, video.videoHeight);

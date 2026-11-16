@@ -22,7 +22,7 @@ const ico = (n, c) => `<svg class="${c || 'ee-i'}" viewBox="0 0 24 24" fill="non
 
 const CSS = `\
 #eco-end{position:fixed;inset:0;z-index:2000;display:none;overflow:hidden;color:#eef7ea;background:#06141a;font-family:var(--font,"Bricolage Grotesque",system-ui,sans-serif)}\
-#eco-end.on{display:block}#eco-end *{box-sizing:border-box;margin:0}\
+#eco-end.on{display:block}#eco-end *{box-sizing:border-box}:where(#eco-end *){margin:0}\
 .ee-sky{position:absolute;inset:0;background:linear-gradient(180deg,#07161f 0%,#10303a 36%,#2b5b50 62%,#e6a068 100%)}\
 .ee-sunwrap{position:absolute;right:7%;top:30%;width:0;height:0;transform:translateY(46vh)}\
 .ee-sun{position:absolute;width:46vmin;height:46vmin;left:-23vmin;top:-23vmin;border-radius:50%;background:radial-gradient(circle,#fff3c8 0,#ffc977 22%,rgba(255,165,90,.35) 48%,transparent 70%)}\
@@ -36,24 +36,24 @@ const CSS = `\
 .ee-vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,rgba(4,16,16,.55) 0,rgba(4,16,16,.15) 45%,rgba(2,8,8,.7) 100%)}\
 #ee-fx{position:absolute;inset:0;width:100%;height:100%}\
 .ee-bar{position:absolute;left:0;right:0;height:10vh;background:#000;z-index:5}.ee-bt{top:0}.ee-bb{bottom:0}\
-.ee-main{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6vh 5vw}\
+.ee-main{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4vh 5vw}\
 .ee-leaf{width:clamp(36px,4.5vw,52px);color:#7dff6a;filter:drop-shadow(0 0 12px #56e04a);margin-bottom:4px}\
 .ee-leaf path{stroke-dasharray:80;stroke-dashoffset:80}\
-.ee-eye{font-weight:600;font-size:clamp(.8rem,1.5vw,1.15rem);color:#b7f27a;letter-spacing:.85em;margin:1.2rem 0 .9rem .9em}\
-.ee-t1{font-weight:800;font-style:italic;font-size:clamp(2rem,min(6.2vw,10vh),5rem);line-height:1;letter-spacing:-.02em;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.55)}\
-.ee-t2{font-weight:800;font-style:italic;font-size:clamp(2.6rem,min(8.6vw,14vh),6.6rem);line-height:1;letter-spacing:-.02em;margin-top:.15em;background:linear-gradient(180deg,#e9ff9a 0%,#5df23e 45%,#17a82b 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 26px rgba(80,255,70,.55));position:relative}\
-.ee-line{width:min(44vw,360px);height:3px;margin:1.2rem 0 1.5rem;border-radius:3px;background:linear-gradient(90deg,transparent,#8dff6a,transparent);box-shadow:0 0 14px #5df23e}\
-.ee-sub{max-width:min(560px,80vw);font-size:clamp(.9rem,min(1.4vw,2.1vh),1.15rem);line-height:1.55;color:#e6f0e2;text-shadow:0 2px 10px rgba(0,0,0,.7);margin-bottom:.5rem}\
-.ee-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin:clamp(1.8rem,5vh,3.2rem) 0 clamp(2rem,5.5vh,3.4rem)}\
+.ee-eye{font-weight:600;font-size:clamp(.8rem,1.5vw,1.15rem);color:#b7f27a;letter-spacing:.85em;margin:clamp(.5rem,1.6vh,1rem) 0 clamp(.4rem,1.2vh,.8rem) .85em}\
+.ee-t1{font-weight:800;font-style:italic;font-size:clamp(1.8rem,min(5.2vw,8vh),4.6rem);line-height:1;letter-spacing:-.02em;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.55)}\
+.ee-t2{font-weight:800;font-style:italic;font-size:clamp(2.4rem,min(7.4vw,11.5vh),6rem);line-height:1;letter-spacing:-.02em;margin-top:.1em;background:linear-gradient(180deg,#e9ff9a 0%,#5df23e 45%,#17a82b 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 26px rgba(80,255,70,.55));position:relative}\
+.ee-line{width:min(44vw,360px);height:3px;margin:clamp(.6rem,1.6vh,1.1rem) 0 clamp(.7rem,1.8vh,1.2rem);border-radius:3px;background:linear-gradient(90deg,transparent,#8dff6a,transparent);box-shadow:0 0 14px #5df23e}\
+.ee-sub{max-width:min(580px,82vw);font-size:clamp(.88rem,1.4vw,1.15rem);line-height:1.65;color:#e6f0e2;text-shadow:0 2px 10px rgba(0,0,0,.7);margin-bottom:0;text-wrap:balance}\
+.ee-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin:clamp(1.2rem,3.4vh,2.2rem) 0}\
 .ee-chip{display:flex;align-items:center;gap:12px;padding:11px 22px;border-radius:999px;border:1.5px solid rgba(160,255,150,.35);background:rgba(8,28,24,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);text-align:left;font-weight:600;font-size:.95rem;line-height:1.1}\
 .ee-chip .ee-i{width:24px;height:24px;color:#6fe3ff}.ee-chip:nth-child(2) .ee-i{color:#4fc3ff}.ee-chip:nth-child(3) .ee-i{color:#8dff6a}.ee-chip:nth-child(4) .ee-i{color:#b8ff5a}\
 .ee-tick{width:24px;height:24px;color:#6bf26a}.ee-tick circle,.ee-tick path{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:66;stroke-dashoffset:66}\
-.ee-next{display:flex;align-items:center;gap:14px;border:0;cursor:pointer;font:inherit;font-weight:700;font-size:clamp(1.05rem,1.7vw,1.3rem);color:#08230f;padding:1rem 3rem;border-radius:999px;background:linear-gradient(180deg,#b6ff7a,#3fdc3a);box-shadow:0 0 0 3px rgba(190,255,150,.25),0 10px 40px rgba(70,255,70,.45);margin-bottom:.8vh}\
+.ee-next{display:flex;align-items:center;gap:14px;border:0;cursor:pointer;font:inherit;font-weight:700;font-size:clamp(1.05rem,1.7vw,1.3rem);color:#08230f;padding:1rem 3rem;border-radius:999px;background:linear-gradient(180deg,#b6ff7a,#3fdc3a);box-shadow:0 0 0 3px rgba(190,255,150,.25),0 10px 40px rgba(70,255,70,.45)}\
 .ee-next .ee-i{width:22px;height:22px}\
-.ee-row{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:clamp(1.4rem,4vh,2.4rem)}\
+.ee-row{display:flex;flex-wrap:wrap;justify-content:center;gap:18px;margin-top:clamp(1.2rem,3vh,2rem)}\
 .ee-ghost{display:flex;align-items:center;gap:10px;cursor:pointer;font:inherit;font-weight:600;color:#eef7ea;padding:.75rem 1.8rem;border-radius:999px;border:1.5px solid rgba(190,255,170,.4);background:rgba(8,28,24,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}\
 .ee-ghost .ee-i{width:18px;height:18px}.ee-ghost:hover,.ee-ghost:focus-visible{background:rgba(120,255,110,.18)}\
-.ee-next:focus-visible,.ee-ghost:focus-visible{outline:2px solid rgba(255,255,255,.7);outline-offset:6px}\
+.ee-next:focus-visible,.ee-ghost:focus-visible{outline:3px solid #fff;outline-offset:3px}\
 .ee-cards{position:absolute;left:4vw;top:22vh;z-index:3;display:none;align-items:center;gap:6px}\
 .ee-card{width:clamp(110px,14vw,210px);aspect-ratio:1/1.05;border-radius:6px;overflow:hidden;border:2px solid rgba(255,255,255,.7);box-shadow:0 12px 30px rgba(0,0,0,.5)}\
 .ee-card svg{width:100%;height:100%;display:block}.ee-cb{transform:rotate(-7deg)}.ee-cg{transform:rotate(5deg);margin-left:-2px;box-shadow:0 0 30px rgba(120,255,100,.55),0 12px 30px rgba(0,0,0,.5)}\
@@ -100,7 +100,8 @@ const GOOD = {
   clean: '<rect width="100" height="100" fill="#5fc3e8"/><circle cx="76" cy="24" r="10" fill="#fff7c2"/><path d="M0 66l25-18 22 14 25-22 28 22v38H0z" fill="#4d8f6a"/><path d="M0 80q30-14 60-4t40-6v30H0z" fill="#3fb04a"/><ellipse cx="38" cy="90" rx="22" ry="6" fill="#26c6da"/>'
 };
 
-let root, fxCanvas, ctx, raf = 0, parts = [], pill, cb = {}, aud, start = 0, lastShowAt = 0;
+let lastShowAt = 0;
+let root, fxCanvas, ctx, raf = 0, parts = [], pill, cb = {}, aud, start = 0;
 
 function ensure() {
   if (root) return;
@@ -182,6 +183,7 @@ function play(o) {
   root.classList.remove('play'); void root.offsetWidth; root.classList.add('play');
   seed(); start = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
   if (!o || o.sound !== false) chime();
+  setTimeout(() => { const b = root.querySelector('.ee-next'); if (b) b.focus({ preventScroll: true }); }, 4300);
 }
 
 function stop() { cancelAnimationFrame(raf); if (root) root.classList.remove('on', 'play'); }
@@ -191,10 +193,10 @@ function doReplay() { stop(); if (cb.replay) cb.replay(); }
 function doInspect() { stop(); pill.style.display = 'block'; if (cb.inspect) cb.inspect(); }
 
 export function show(o) {
-  ensure();
-  if (root?.classList.contains('on') && performance.now() - lastShowAt < 1500) return;
+  ensure(); o = o || {};
+  // ignore a duplicate call while the screen is already up (animation and chime must start once)
+  if (root.classList.contains('on') && performance.now() - lastShowAt < 1500) return;
   lastShowAt = performance.now();
-  o = o || {};
   cb = { last: o, next: o.onNext, replay: o.onReplay, close: o.onClose, inspect: o.onInspect };
   if (pill) pill.style.display = 'none';
   build(CFG[o.to] || CFG.recovering);
